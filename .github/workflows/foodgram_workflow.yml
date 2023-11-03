@@ -62,7 +62,7 @@ jobs:
         script: |
           sudo docker compose stop
           sudo docker compose rm -f backend frontend
-          sudo docker image rm ${{ secrets.DOCKER_USERNAME }}/foodgram_backend ${{ secrets.DOCKER_USERNAME }}/foodgram_frontend
+          sudo docker image rm ${{ secrets.DOCKER_USERNAME }}/foodgram_backend ${{ secrets.DOCKER_USERNAME }}/foodgram-frontend
           sudo docker compose pull backend frontend
           touch .env
           echo -n > .env
