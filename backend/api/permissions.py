@@ -1,18 +1,12 @@
-from rest_framework.permissions import SAFE_METHODS, BasePermission
-
-from users.models import UserRole
+from rest_framework import permissions
 
 
-class IsAdminOrReadOnly(BasePermission):
-
-    def has_permission(self, request, view):
-        return (request.method in SAFE_METHODS
-                or request.user.role == UserRole.ADMIN)
-
-
-class IsAdminAuthorOrReadOnly(BasePermission):
+class IsAdminAuthorOrReadOnly(permissions.IsAuthenticatedOrReadOnly):
+    message = "Доступ запрещен!"
 
     def has_object_permission(self, request, view, obj):
-        return (request.method in ('GET',)
-                or obj.author == request.user
-                or request.user.role == UserRole.ADMIN)
+        return (
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_superuser
+            or obj.author == request.user
+        )
