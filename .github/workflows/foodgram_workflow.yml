@@ -62,7 +62,6 @@ jobs:
         script: |
           sudo docker compose stop
           sudo docker compose rm -f backend frontend
-          sudo docker image rm ${{ secrets.DOCKER_USERNAME }}/foodgram_backend ${{ secrets.DOCKER_USERNAME }}/foodgram-frontend
           sudo docker compose pull backend frontend
           touch .env
           echo -n > .env
@@ -73,7 +72,7 @@ jobs:
           echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
           echo DB_HOST=${{ secrets.DB_HOST }} >> .env
           echo DB_PORT=${{ secrets.DB_PORT }} >> .env
-          sudo docker-compose up -d
+          sudo docker compose up -d
           sudo docker compose exec -T backend python manage.py makemigrations users
           sudo docker compose exec -T backend python manage.py migrate
           sudo docker compose exec -T backend python manage.py collectstatic --no-input 
