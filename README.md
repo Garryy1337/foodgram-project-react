@@ -1,2 +1,3 @@
 # praktikum_new_diplom
-sad
+адрес сервера: (http://crycat.ddns.net/)http://crycat.ddns.net/
+Админ android android
