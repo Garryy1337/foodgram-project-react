@@ -1,2 +1,2 @@
 # praktikum_new_diplom
-sad
+адрес сервера: http://crycat.ddns.net/ Админ admin admin
