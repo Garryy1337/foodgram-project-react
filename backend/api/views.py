@@ -11,12 +11,12 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
-from tags.models import Tag
 from recipes.models import (
+    Tag,
     Ingredient,
     Favorite,
     Recipe,
-    RecipeIngredients,
+    IngredientInRecipe,
     ShoppingCart,
 )
 from users.models import Subscription, User
@@ -25,7 +25,7 @@ from api.serializers import (
     RecipeCreateUpdateSerializer,
     RecipeSerializer,
     ShortRecipeSerializer,
-    SubscriptionSerializer,
+    SubscribeSerializer,
     TagSerializer,
 )
 from api.filters import RecipeFilter
@@ -45,7 +45,7 @@ class CustomUserViewSet(UserViewSet):
         user = self.request.user
         queryset = user.follower.all()
         pages = self.paginate_queryset(queryset)
-        serializer = SubscriptionSerializer(
+        serializer = SubscribeSerializer(
             pages, many=True, context={"request": request}
         )
         return self.get_paginated_response(serializer.data)
@@ -73,7 +73,7 @@ class CustomUserViewSet(UserViewSet):
                 )
 
             queryset = Subscription.objects.create(author=author, user=user)
-            serializer = SubscriptionSerializer(
+            serializer = SubscribeSerializer(
                 queryset, context={"request": request}
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -193,26 +193,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shopping_cart = ShoppingCart.objects.filter(user=self.request.user)
         recipes = [item.recipe.id for item in shopping_cart]
         buy = (
-            RecipeIngredients.objects.filter(recipe__in=recipes)
-            .values("ingredient")
+            IngredientInRecipe.objects.filter(recipe__in=recipes)
+            .select_related("ingredient")
+            .values("ingredient__name", "ingredient__measurement_unit")
             .annotate(amount=Sum("amount"))
         )
 
-        purchased = [
-            "Список покупок:",
-        ]
+        purchased = ["Список покупок:"]
         for item in buy:
-            ingredient = Ingredient.objects.get(pk=item["ingredient"])
+            name = item["ingredient__name"]
             amount = item["amount"]
-            purchased.append(
-                f"{ingredient.name}: {amount}, "
-                f"{ingredient.unit_of_measurement}"
-            )
+            measurement_unit = item["ingredient__measurement_unit"]
+            purchased.append(f"{name}: {amount}, {measurement_unit}")
+
         purchased_in_file = "\n".join(purchased)
 
         response = HttpResponse(purchased_in_file, content_type="text/plain")
         response[
-            "Content-Disposition"
-        ] = "attachment; filename=shopping-list.txt"
+            "Content-Disposition"] = "attachment; filename=shopping-list.txt"
 
         return response

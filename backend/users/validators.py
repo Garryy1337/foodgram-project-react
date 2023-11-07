@@ -4,12 +4,12 @@ from rest_framework.validators import ValidationError
 
 
 def validate_username(value):
-    """Проверка имени и возврат не корректных символов."""
+    """Проверка имени и возврат некорректных символов."""
     forbidden_characters = "".join(re.split(r"[\w]|[.]|[@]|[+]|[-]+$", value))
 
-    if len(forbidden_characters) != 0:
+    if forbidden_characters:
         raise ValidationError(
-            f"Введены не допустимые символы: {forbidden_characters}"
-            f"Не допускаются: пробел(перенос строки и т.п.)"
+            f"Введены недопустимые символы: {forbidden_characters}"
+            f" Недопускаются: пробел(перенос строки и т.п.)"
             " и символы, кроме . @ + - _"
         )

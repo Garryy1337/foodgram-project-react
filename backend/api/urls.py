@@ -5,8 +5,8 @@ from api.views import (
     IngredientViewSet,
     RecipeViewSet,
     TagViewSet,
+    CustomUserViewSet
 )
-from api.views import CustomUserViewSet
 
 app_name = "api"
 router = DefaultRouter()

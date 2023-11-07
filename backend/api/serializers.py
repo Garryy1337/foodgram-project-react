@@ -1,19 +1,20 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.shortcuts import get_object_or_404
+from rest_framework import exceptions, serializers, status
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework.exceptions import ValidationError
+from rest_framework.fields import SerializerMethodField
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import exceptions, serializers
 
-from tags.models import Tag
 from recipes.models import (
+    Tag,
     Favorite,
     Ingredient,
     Recipe,
-    RecipeIngredients,
+    IngredientInRecipe,
     ShoppingCart,
 )
 from users.models import Subscription, User
-from api.pagination import PageNumberPagination
 
 
 class CustomUserSerializer(UserSerializer):
@@ -54,50 +55,42 @@ class CustomUserCreateSerializer(UserCreateSerializer):
         )
 
 
-class SubscriptionSerializer(CustomUserSerializer, PageNumberPagination):
-    """Подписка."""
+class SubscribeSerializer(CustomUserSerializer):
+    recipes_count = SerializerMethodField()
+    recipes = SerializerMethodField()
 
-    email = serializers.ReadOnlyField(source="author.email")
-    id = serializers.ReadOnlyField(source="author.id")
-    username = serializers.ReadOnlyField(source="author.username")
-    first_name = serializers.ReadOnlyField(source="author.first_name")
-    last_name = serializers.ReadOnlyField(source="author.last_name")
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.ReadOnlyField(source="author.recipes.count")
-    is_subscribed = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Subscription
-        fields = (
-            "id",
-            "username",
-            "first_name",
-            "last_name",
-            "email",
-            "is_subscribed",
-            "recipes",
-            "recipes_count",
+    class Meta(CustomUserSerializer.Meta):
+        fields = CustomUserSerializer.Meta.fields + (
+            'recipes_count', 'recipes'
         )
+        read_only_fields = ('email', 'username')
 
-    def get_recipes(self, obj):
-        """Получение списка рецептов автора."""
-        from api.serializers import ShortRecipeSerializer
-
-        author_recipes = obj.author.recipes.all()
-
-        if author_recipes:
-            serializer = ShortRecipeSerializer(
-                author_recipes,
-                context={"request": self.context.get("request")},
-                many=True,
+    def validate(self, data):
+        author = self.instance
+        user = self.context.get('request').user
+        if Subscription.objects.filter(author=author, user=user).exists():
+            raise ValidationError(
+                detail='Вы уже подписаны на этого пользователя!',
+                code=status.HTTP_400_BAD_REQUEST
             )
-            return serializer.data
+        if user == author:
+            raise ValidationError(
+                detail='Нельзя подписаться на самого себя!',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        return data
 
-        return []
+    def get_recipes_count(self, author):
+        return author.recipes.count()
 
-    def get_recipes_count(self, obj):
-        """Количество рецептов автора."""
-        return Recipe.objects.filter(author=obj.id).count()
+    def get_recipes(self, author):
+        request = self.context.get('request')
+        limit = request.GET.get('recipes_limit')
+        recipes = author.recipes.all()
+        if limit:
+            recipes = recipes[:int(limit)]
+        serializer = ShortRecipeSerializer(recipes, many=True, read_only=True)
+        return serializer.data
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -122,18 +115,21 @@ class RecipeIngredientsSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = RecipeIngredients
+        model = IngredientInRecipe
         fields = ("id", "name", "unit_of_measurement", "amount")
 
 
 class CreateUpdateRecipeIngredientsSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    MIN_INGREDIENT_AMOUNT = 1
     amount = serializers.IntegerField(
-        validators=(
+        validators=[
             MinValueValidator(
-                1, message="Количество ингредиентов не может быть меньше 1."
-            ),
-        )
+                MIN_INGREDIENT_AMOUNT,
+                message=("Количество ингредиентов не может быть меньше "
+                         f"{MIN_INGREDIENT_AMOUNT}.")
+            )
+        ]
     )
 
     class Meta:
@@ -149,7 +145,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
 
     def get_ingredients(self, obj):
-        ingredients = RecipeIngredients.objects.filter(recipe=obj)
+        ingredients = IngredientInRecipe.objects.filter(recipe=obj)
         serializer = RecipeIngredientsSerializer(ingredients, many=True)
 
         return serializer.data
@@ -172,6 +168,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
+    MIN_COOKING_TIME = 1
+    MAX_COOKING_TIME = 9999
     author = CustomUserSerializer(read_only=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
@@ -179,11 +177,18 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     ingredients = CreateUpdateRecipeIngredientsSerializer(many=True)
     image = Base64ImageField()
     cooking_time = serializers.IntegerField(
-        validators=(
+        validators=[
             MinValueValidator(
-                1, message="Время приготовления не может быть меньше 1!"
+                MIN_COOKING_TIME,
+                message=("Время приготовления не может быть меньше"
+                         f"{MIN_COOKING_TIME}!")
             ),
-        )
+            MaxValueValidator(
+                MAX_COOKING_TIME,
+                message=("Время приготовления не может быть больше"
+                         f"{MAX_COOKING_TIME}!")
+            )
+        ]
     )
 
     def validate_tags(self, value):
@@ -221,7 +226,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 Ingredient, pk=ingredient.get("id").id
             )
 
-            RecipeIngredients.objects.create(
+            IngredientInRecipe.objects.create(
                 recipe=recipe, ingredient=ingredient, amount=amount
             )
 
@@ -242,7 +247,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                     Ingredient, pk=ingredient.get("id").id
                 )
 
-                RecipeIngredients.objects.update_or_create(
+                IngredientInRecipe.objects.update_or_create(
                     recipe=instance,
                     ingredient=ingredient,
                     defaults={"amount": amount},
