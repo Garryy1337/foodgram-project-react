@@ -26,7 +26,7 @@ from api.serializers import (
     RecipeCreateUpdateSerializer,
     RecipeSerializer,
     ShortRecipeSerializer,
-    SubscribeSerializer,
+    SubscriptionSerializer,
     TagSerializer,
 )
 
@@ -45,9 +45,9 @@ class CustomUserViewSet(UserViewSet):
     def subscriptions(self, request):
         """Список авторов, на которых подписан пользователь."""
         user = self.request.user
-        queryset = user.follower.all()
+        queryset = user.followers.all()
         pages = self.paginate_queryset(queryset)
-        serializer = SubscribeSerializer(
+        serializer = SubscriptionSerializer(
             pages, many=True, context={"request": request}
         )
         return self.get_paginated_response(serializer.data)
@@ -75,7 +75,7 @@ class CustomUserViewSet(UserViewSet):
                 )
 
             queryset = Subscription.objects.create(author=author, user=user)
-            serializer = SubscribeSerializer(
+            serializer = SubscriptionSerializer(
                 queryset, context={"request": request}
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -193,23 +193,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipes = [item.recipe.id for item in shopping_cart]
         buy = (
             IngredientInRecipe.objects.filter(recipe__in=recipes)
-            .select_related("ingredient")
-            .values("ingredient__name", "ingredient__measurement_unit")
+            .values("ingredient")
             .annotate(amount=Sum("amount"))
-            .order_by("ingredient__name")
         )
 
-        purchased = ["Список покупок:"]
+        purchased = [
+            "Список покупок:",
+        ]
         for item in buy:
-            name = item["ingredient__name"]
+            ingredient = Ingredient.objects.get(pk=item["ingredient"])
             amount = item["amount"]
-            measurement_unit = item["ingredient__measurement_unit"]
-            purchased.append(f"{name}: {amount}, {measurement_unit}")
-
+            purchased.append(
+                f"{ingredient.name}: {amount}, "
+                f"{ingredient.measurement_unit}"
+            )
         purchased_in_file = "\n".join(purchased)
 
         response = HttpResponse(purchased_in_file, content_type="text/plain")
         response[
-            "Content-Disposition"] = "attachment; filename=shopping-list.txt"
+            "Content-Disposition"
+        ] = "attachment; filename=shopping-list.txt"
 
         return response

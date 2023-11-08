@@ -1,11 +1,9 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.shortcuts import get_object_or_404
-from rest_framework import exceptions, serializers, status
+from rest_framework import exceptions, serializers
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework.exceptions import ValidationError
-from rest_framework.fields import SerializerMethodField
 from drf_extra_fields.fields import Base64ImageField
-from api.Constants import (
+from recipes.constants import (
     MIN_COOKING_TIME, MAX_COOKING_TIME, MIN_INGREDIENT_AMOUNT)
 from recipes.models import (
     Tag,
@@ -16,6 +14,7 @@ from recipes.models import (
     ShoppingCart,
 )
 from users.models import Subscription, User
+from api.pagination import PageNumberPagination
 
 
 class CustomUserSerializer(UserSerializer):
@@ -56,42 +55,47 @@ class CustomUserCreateSerializer(UserCreateSerializer):
         )
 
 
-class SubscribeSerializer(CustomUserSerializer):
-    recipes_count = SerializerMethodField()
-    recipes = SerializerMethodField()
+class SubscriptionSerializer(CustomUserSerializer, PageNumberPagination):
+    """Подписка."""
 
-    class Meta(CustomUserSerializer.Meta):
-        fields = CustomUserSerializer.Meta.fields + (
-            'recipes_count', 'recipes'
+    email = serializers.ReadOnlyField(source="author.email")
+    id = serializers.ReadOnlyField(source="author.id")
+    username = serializers.ReadOnlyField(source="author.username")
+    first_name = serializers.ReadOnlyField(source="author.first_name")
+    last_name = serializers.ReadOnlyField(source="author.last_name")
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.ReadOnlyField(source="author.recipes.count")
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Subscription
+        fields = (
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "is_subscribed",
+            "recipes",
+            "recipes_count",
         )
-        read_only_fields = ('email', 'username')
 
-    def validate(self, data):
-        author = self.instance
-        user = self.context.get('request').user
-        if Subscription.objects.filter(author=author, user=user).exists():
-            raise ValidationError(
-                detail='Вы уже подписаны на этого пользователя!',
-                code=status.HTTP_400_BAD_REQUEST
+    def get_recipes_count(self, obj):
+        """Количество рецептов автора."""
+        return Recipe.objects.filter(author=obj.id).count()
+
+    def get_recipes(self, obj):
+        author_recipes = obj.author.recipes.all()
+
+        if author_recipes:
+            serializer = ShortRecipeSerializer(
+                author_recipes,
+                context={"request": self.context.get("request")},
+                many=True,
             )
-        if user == author:
-            raise ValidationError(
-                detail='Нельзя подписаться на самого себя!',
-                code=status.HTTP_400_BAD_REQUEST
-            )
-        return data
+            return serializer.data
 
-    def get_recipes_count(self, author):
-        return author.recipes.count()
-
-    def get_recipes(self, author):
-        request = self.context.get('request')
-        limit = request.GET.get('recipes_limit')
-        recipes = author.recipes.all()
-        if limit:
-            recipes = recipes[:int(limit)]
-        serializer = ShortRecipeSerializer(recipes, many=True, read_only=True)
-        return serializer.data
+        return []
 
 
 class TagSerializer(serializers.ModelSerializer):
