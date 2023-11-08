@@ -1,6 +1,7 @@
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import filters, status, viewsets
@@ -28,6 +29,7 @@ from api.serializers import (
     SubscribeSerializer,
     TagSerializer,
 )
+
 from api.filters import RecipeFilter
 from api.permissions import IsAdminAuthorOrReadOnly
 
@@ -123,15 +125,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return RecipeSerializer
 
-    def add(self, model, user, pk, name):
-        """Добавление рецепта."""
-        recipe = get_object_or_404(Recipe, pk=pk)
-        relation = model.objects.filter(user=user, recipe=recipe)
-        if relation.exists():
-            return Response(
-                {"errors": f"Нельзя повторно добавить рецепт в {name}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    def add_to(self, model, user, pk):
+        """Метод для добавления."""
+        if model.objects.filter(user=user, recipe__id=pk).exists():
+            return Response({'errors': 'Рецепт уже добавлен!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        recipe = get_object_or_404(Recipe, id=pk)
         model.objects.create(user=user, recipe=recipe)
         serializer = ShortRecipeSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -197,6 +196,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .select_related("ingredient")
             .values("ingredient__name", "ingredient__measurement_unit")
             .annotate(amount=Sum("amount"))
+            .order_by("ingredient__name")
         )
 
         purchased = ["Список покупок:"]

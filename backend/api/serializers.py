@@ -5,7 +5,8 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
 from drf_extra_fields.fields import Base64ImageField
-
+from api.Constants import (
+    MIN_COOKING_TIME, MAX_COOKING_TIME, MIN_INGREDIENT_AMOUNT)
 from recipes.models import (
     Tag,
     Favorite,
@@ -121,7 +122,6 @@ class RecipeIngredientsSerializer(serializers.ModelSerializer):
 
 class CreateUpdateRecipeIngredientsSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    MIN_INGREDIENT_AMOUNT = 1
     amount = serializers.IntegerField(
         validators=[
             MinValueValidator(
@@ -168,8 +168,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    MIN_COOKING_TIME = 1
-    MAX_COOKING_TIME = 9999
     author = CustomUserSerializer(read_only=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True

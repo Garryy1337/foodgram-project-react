@@ -1,12 +1,15 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
 from users.validators import validate_username
+from django.db.models import UniqueConstraint, CheckConstraint, Q
 
 
 class User(AbstractUser):
-    """Модель пользователей."""
+    class FieldNames:
+        USERNAME = 'email'
+        REQUIRED = ['username', 'email']
 
+    """Модель пользователей."""
     email = models.EmailField(
         max_length=254,
         unique=True,
@@ -14,9 +17,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
-        validators=[
-            validate_username,
-        ],
+        validators=[validate_username],
     )
     first_name = models.CharField(
         max_length=150,
@@ -30,6 +31,8 @@ class User(AbstractUser):
 
     class Meta:
         ordering = ("id",)
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
 
     def __str__(self):
         return self.username
@@ -37,17 +40,16 @@ class User(AbstractUser):
 
 class Subscription(models.Model):
     """Модель подписки."""
-
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="follower",
+        related_name="followers",
         verbose_name="Подписчик",
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="subscribers",
+        related_name="subscriptions",
         verbose_name="Автор",
     )
 
@@ -56,11 +58,12 @@ class Subscription(models.Model):
         verbose_name_plural = "Подписки"
 
         constraints = [
-            models.UniqueConstraint(
-                fields=["author", "user"], name="unique_subscription"
+            UniqueConstraint(
+                fields=["author", "user"],
+                name="unique_subscription",
             ),
-            models.CheckConstraint(
-                check=~models.Q(user=models.F("author")),
+            CheckConstraint(
+                check=~Q(user=models.F("author")),
                 name="user_cannot_follow_himself",
             ),
         ]

@@ -1,7 +1,7 @@
 import csv
+import os
 
 from django.core.management.base import BaseCommand
-
 from recipes.models import Ingredient
 
 
@@ -13,7 +13,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         print("Ожидайте, загрузка...")
-        file_path = options["path"] + "ingredients.csv"
+        file_name = "ingredients.csv"
+        file_path = os.path.join(options["path"], file_name)
+
         with open(file_path, "r") as csv_file:
             reader = csv.reader(csv_file)
 
@@ -26,7 +28,7 @@ class Command(BaseCommand):
                         measurement_unit=row[measurement_unit_csv],
                     )
                     if not created:
-                        print(f"Ингредиент {obj} уже tcnm в базе данных.")
+                        print(f"Ингредиент {obj} уже есть в базе данных.")
                 except Exception as err:
                     print(f"Ошибка в строке {row}: {err}")
 

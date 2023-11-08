@@ -4,6 +4,9 @@ from django.core.validators import (
 from django.db import models
 from django.db.models import UniqueConstraint
 
+from api.Constants import (
+    MIN_AMOUNT, MAX_AMOUNT, MIN_COOKING_TIME, MAX_COOKING_TIME)
+
 User = get_user_model()
 
 
@@ -68,8 +71,10 @@ class IngredientInRecipe(models.Model):
     amount = models.IntegerField(
         default=1,
         validators=[
-            MinValueValidator(1, 'Минимальное значение - 1'),
-            MaxValueValidator(50, 'Максимальное значение - 50')
+            MinValueValidator(
+                MIN_AMOUNT, f'Минимальное значение - {MIN_AMOUNT}'),
+            MaxValueValidator(
+                MAX_AMOUNT, f'Максимальное значение - {MAX_AMOUNT}')
         ],
         verbose_name='Количество ингредиента'
     )
@@ -120,8 +125,12 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         validators=[
-            MinValueValidator(1, 'Минимальное значение - 1'),
-            MaxValueValidator(9999, 'Максимальное значение - 9999')
+            MinValueValidator(
+                MIN_COOKING_TIME,
+                f'Минимальное значение - {MIN_COOKING_TIME}'),
+            MaxValueValidator(
+                MAX_COOKING_TIME,
+                f'Максимальное значение - {MAX_COOKING_TIME}')
         ],
         verbose_name='Время приготовления, мин.'
     )
