@@ -1,20 +1,21 @@
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.shortcuts import get_object_or_404
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import exceptions, serializers
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from drf_extra_fields.fields import Base64ImageField
+
+from api.pagination import PageNumberPagination
 from recipes.constants import (
-    MIN_COOKING_TIME, MAX_COOKING_TIME, MIN_INGREDIENT_AMOUNT)
+    MAX_COOKING_TIME, MIN_COOKING_TIME, MIN_INGREDIENT_AMOUNT)
 from recipes.models import (
-    Tag,
     Favorite,
     Ingredient,
-    Recipe,
     IngredientInRecipe,
+    Recipe,
     ShoppingCart,
+    Tag,
 )
 from users.models import Subscription, User
-from api.pagination import PageNumberPagination
 
 
 class CustomUserSerializer(UserSerializer):
@@ -96,6 +97,16 @@ class SubscriptionSerializer(CustomUserSerializer, PageNumberPagination):
             return serializer.data
 
         return []
+
+    def validate(self, data):
+        user = self.context["request"].user
+        author = self.instance.author if self.instance else data["author"]
+
+        if user == author:
+            raise serializers.ValidationError(
+                "Нельзя подписаться или отписаться от себя!")
+
+        return data
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -215,6 +226,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        ingredients_amounts = []
         author = self.context.get("request").user
         tags = validated_data.pop("tags")
         ingredients = validated_data.pop("ingredients")
@@ -227,10 +239,10 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             ingredient = get_object_or_404(
                 Ingredient, pk=ingredient.get("id").id
             )
+        ingredients_amounts.append(IngredientInRecipe(
+            recipe=recipe, ingredient=ingredient, amount=amount))
 
-            IngredientInRecipe.objects.create(
-                recipe=recipe, ingredient=ingredient, amount=amount
-            )
+        IngredientInRecipe.objects.bulk_create(ingredients_amounts)
 
         return recipe
 

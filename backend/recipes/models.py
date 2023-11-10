@@ -1,10 +1,16 @@
 from django.core.validators import (
-    MinValueValidator, MaxValueValidator, RegexValidator)
+    MinValueValidator,
+    MaxValueValidator,
+    RegexValidator,
+)
 from django.db import models
 from users.models import User
-
 from recipes.constants import (
-    MIN_AMOUNT, MAX_AMOUNT, MIN_COOKING_TIME, MAX_COOKING_TIME)
+    MIN_AMOUNT,
+    MAX_AMOUNT,
+    MIN_COOKING_TIME,
+    MAX_COOKING_TIME,
+)
 
 
 class Tag(models.Model):

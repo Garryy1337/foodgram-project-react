@@ -7,31 +7,27 @@ from djoser.views import UserViewSet
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
-)
+    IsAuthenticated, IsAuthenticatedOrReadOnly,)
 from rest_framework.response import Response
 
-from recipes.models import (
-    Tag,
-    Ingredient,
-    Favorite,
-    Recipe,
-    IngredientInRecipe,
-    ShoppingCart,
-)
-from users.models import Subscription, User
+from api.filters import RecipeFilter
+from api.permissions import IsAdminAuthorOrReadOnly
 from api.serializers import (
     IngredientSerializer,
     RecipeCreateUpdateSerializer,
     RecipeSerializer,
     ShortRecipeSerializer,
     SubscriptionSerializer,
-    TagSerializer,
+    TagSerializer,)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
+    Tag,
 )
-
-from api.filters import RecipeFilter
-from api.permissions import IsAdminAuthorOrReadOnly
+from users.models import Subscription, User
 
 
 class CustomUserViewSet(UserViewSet):
@@ -45,7 +41,7 @@ class CustomUserViewSet(UserViewSet):
     def subscriptions(self, request):
         """Список авторов, на которых подписан пользователь."""
         user = self.request.user
-        queryset = user.followers.all()
+        queryset = user.followers.exclude(id=user.id)
         pages = self.paginate_queryset(queryset)
         serializer = SubscriptionSerializer(
             pages, many=True, context={"request": request}
@@ -125,12 +121,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return RecipeSerializer
 
-    def add_to(self, model, user, pk):
-        """Метод для добавления."""
-        if model.objects.filter(user=user, recipe__id=pk).exists():
-            return Response({'errors': 'Рецепт уже добавлен!'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        recipe = get_object_or_404(Recipe, id=pk)
+    def add(self, model, user, pk, name):
+        """Добавление рецепта."""
+        recipe = get_object_or_404(Recipe, pk=pk)
+        relation = model.objects.filter(user=user, recipe=recipe)
+        if relation.exists():
+            return Response(
+                {"errors": f"Нельзя повторно добавить рецепт в {name}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         model.objects.create(user=user, recipe=recipe)
         serializer = ShortRecipeSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -195,6 +194,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             IngredientInRecipe.objects.filter(recipe__in=recipes)
             .values("ingredient")
             .annotate(amount=Sum("amount"))
+            .order_by("ingredient__name")
         )
 
         purchased = [
