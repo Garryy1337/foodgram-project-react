@@ -19,13 +19,13 @@ class RecipeFilter(FilterSet):
     def favorited_method(self, queryset, name, value):
         if value:
             return queryset.filter(
-                favorite__user__username=self.request.user.username)
+                favorite__user=self.request.user.id)
         return queryset
 
     def in_shopping_cart_method(self, queryset, name, value):
         if value:
             return queryset.filter(
-                shopping_list__user__username=self.request.user.username)
+                shopping_list__user=self.request.user.id)
         return queryset
 
     class Meta:

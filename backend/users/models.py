@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import UniqueConstraint, CheckConstraint, Q
+from recipes.constants import UserFieldLength
 
 
 class User(AbstractUser):
@@ -14,7 +15,7 @@ class User(AbstractUser):
 
     """Модель пользователей."""
     email = models.EmailField(
-        max_length=254,
+        max_length=UserFieldLength.EMAIL_MAX_LENGTH,
         unique=True,
     )
 

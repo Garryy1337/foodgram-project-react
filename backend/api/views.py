@@ -1,7 +1,6 @@
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import filters, status, viewsets
@@ -50,18 +49,12 @@ class CustomUserViewSet(UserViewSet):
 
     @action(
         detail=True,
-        methods=("post", "delete"),
+        methods=("post",),
     )
     def subscribe(self, request, id=None):
         """Подписка на автора."""
         user = self.request.user
         author = get_object_or_404(User, pk=id)
-
-        if user == author:
-            return Response(
-                {"errors": "Нельзя подписаться или отписаться от себя!"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         if self.request.method == "POST":
             if Subscription.objects.filter(user=user, author=author).exists():
@@ -76,23 +69,25 @@ class CustomUserViewSet(UserViewSet):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if self.request.method == "DELETE":
-            if not Subscription.objects.filter(
-                user=user, author=author
-            ).exists():
-                return Response(
-                    {"errors": "Вы уже отписаны!"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            subscription = get_object_or_404(
-                Subscription, user=user, author=author
-            )
-            subscription.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    @subscribe.mapping.delete
+    def unsubscribe(self, request, id=None):
+        """Отписка от автора."""
+        user = self.request.user
+        author = get_object_or_404(User, pk=id)
+
+        if not Subscription.objects.filter(user=user, author=author).exists():
+            return Response(
+                {"errors": "Вы уже отписаны!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        subscription = get_object_or_404(
+            Subscription, user=user, author=author)
+        subscription.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

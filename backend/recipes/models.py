@@ -6,6 +6,8 @@ from django.core.validators import (
 from django.db import models
 from users.models import User
 from recipes.constants import (
+    IngredientFieldLength,
+    TagFieldLength,
     MIN_AMOUNT,
     MAX_AMOUNT,
     MIN_COOKING_TIME,
@@ -16,11 +18,11 @@ from recipes.constants import (
 class Tag(models.Model):
     name = models.CharField(
         'Название',
-        max_length=200
+        max_length=TagFieldLength.NAME_MAX_LENGTH
     )
     color = models.CharField(
         'Цвет в HEX',
-        max_length=7,
+        max_length=TagFieldLength.COLOR_MAX_LENGTH,
         null=True,
         validators=[
             RegexValidator(
@@ -32,7 +34,7 @@ class Tag(models.Model):
     )
     slug = models.SlugField(
         'Уникальный слаг',
-        max_length=200,
+        max_length=TagFieldLength.SLUG_MAX_LENGTH,
         unique=True,
         null=True
     )
@@ -47,12 +49,12 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=80,
+        max_length=IngredientFieldLength.NAME_MAX_LENGTH,
         verbose_name="Название ингредиента",
         help_text="Название ингредиента",
     )
     measurement_unit = models.CharField(
-        max_length=15,
+        max_length=IngredientFieldLength.MEASUREMENT_UNIT,
         verbose_name="Единица измерения ингредиента",
         help_text="Единица измерения ингредиента",
     )
@@ -74,7 +76,7 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     name = models.CharField(
-        max_length=200,
+        max_length=TagFieldLength.NAME_MAX_LENGTH,
         verbose_name="Название рецепта",
         help_text="Название рецепта",
     )
@@ -173,20 +175,26 @@ class RecipeTags(models.Model):
         return f"У рецепта {self.recipe} есть тег {self.tag}"
 
 
-class Favorite(models.Model):
+class BaseList(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="favorite",
         verbose_name="Пользователь",
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name="favorite",
         verbose_name="Рецепт",
     )
 
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return (f"Рецепт {self.recipe} в списке у пользователя {self.user}")
+
+
+class Favorite(BaseList):
     class Meta:
         verbose_name = "Избранное"
         verbose_name_plural = "Избранное"
@@ -197,22 +205,19 @@ class Favorite(models.Model):
             ),
         )
 
-    def __str__(self):
-        return f"Рецепт {self.recipe} в избранном у пользователя {self.user}"
 
-
-class ShoppingCart(models.Model):
+class ShoppingCart(BaseList):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="shopping_list",
         verbose_name="Пользователь",
+        related_name="shopping_list",
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name="shopping_list",
         verbose_name="Рецепт",
+        related_name="shopping_list"
     )
 
     class Meta:
@@ -223,9 +228,4 @@ class ShoppingCart(models.Model):
             models.UniqueConstraint(
                 fields=("user", "recipe"), name="unique_shopping_list_recipe"
             ),
-        )
-
-    def __str__(self):
-        return (
-            f"Рецепт {self.recipe} в списке покупок у пользователя {self.user}"
         )

@@ -1,8 +1,8 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import exceptions, serializers
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework import exceptions, serializers
 
 from api.pagination import PageNumberPagination
 from recipes.constants import (
