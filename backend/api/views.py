@@ -53,38 +53,22 @@ class CustomUserViewSet(UserViewSet):
     )
     def subscribe(self, request, id=None):
         """Подписка на автора."""
-        user = request.user
         author = get_object_or_404(User, pk=id)
+        queryset = Subscription.objects.create(
+            author=author, user=request.user)
+        serializer = SubscriptionSerializer(queryset, context={
+            "request": request})
 
-        if self.request.method == "POST":
-            serializer = SubscriptionSerializer(
-                data={"author": author},
-                context={"request": request}
-            )
-            serializer.is_valid(raise_exception=True)
-
-            if Subscription.objects.filter(user=user, author=author).exists():
-                return Response(
-                    {"errors": "Подписка уже оформлена!"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            queryset = Subscription.objects.create(author=author, user=user)
-            serializer = SubscriptionSerializer(
-                queryset, context={"request": request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, id=None):
         """Отписка от автора."""
-        user = request.user
         author = get_object_or_404(User, pk=id)
 
         try:
-            subscription = Subscription.objects.get(user=user, author=author)
+            subscription = Subscription.objects.get(
+                user=request.user, author=author)
         except Subscription.DoesNotExist:
             return Response(
                 {"errors": "Вы уже отписаны!"},
@@ -125,12 +109,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def add(self, model, user, pk, name):
         """Добавление рецепта."""
         recipe = get_object_or_404(Recipe, pk=pk)
-        relation = model.objects.filter(user=user, recipe=recipe)
-        if relation.exists():
-            return Response(
-                {"errors": f"Нельзя повторно добавить рецепт в {name}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         model.objects.create(user=user, recipe=recipe)
         serializer = ShortRecipeSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -139,11 +117,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """ "Удаление рецепта из списка пользователя."""
         recipe = get_object_or_404(Recipe, pk=pk)
         relation = model.objects.filter(user=user, recipe=recipe)
-        if not relation.exists():
-            return Response(
-                {"errors": f"Нельзя повторно удалить рецепт из {name}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         relation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
