@@ -72,21 +72,21 @@ class CustomUserViewSet(UserViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, id=None):
-        """Отписка от автора."""
-        user = self.request.user
-        author = get_object_or_404(User, pk=id)
-
-        if not Subscription.objects.filter(user=user, author=author).exists():
-            return Response(
-                {"errors": "Вы уже отписаны!"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        subscription = get_object_or_404(
-            Subscription, user=user, author=author)
-        subscription.delete()
-
+    def unsubscribe(self, request, id=None): 
+        """Отписка от автора.""" 
+        user = self.request.user 
+        author = get_object_or_404(User, pk=id) 
+ 
+        try:
+            subscription = Subscription.objects.get(user=user, author=author)
+        except Subscription.DoesNotExist:
+            return Response( 
+                {"errors": "Вы уже отписаны!"}, 
+                status=status.HTTP_400_BAD_REQUEST, 
+            ) 
+ 
+        subscription.delete() 
+ 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -141,39 +141,49 @@ class RecipeViewSet(viewsets.ModelViewSet):
         relation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(
-        detail=True,
-        methods=("post", "delete"),
-        url_path="favorite",
-        url_name="favorite",
-    )
-    def favorite(self, request, pk=None):
-        """Добавление и удаление рецептов из избранного."""
-        user = request.user
-        if request.method == "POST":
-            name = "избранное"
-            return self.add(Favorite, user, pk, name)
-        if request.method == "DELETE":
-            name = "избранного"
-            return self.delete_relation(Favorite, user, pk, name)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    @action( 
+        detail=True, 
+        methods=("post",), 
+        url_path="favorite", 
+        url_name="favorite", 
+    ) 
+    def favorite(self, request, pk=None): 
+        """Добавление рецепта в избранное.""" 
+        user = request.user 
+        name = "избранное"
 
-    @action(
-        detail=True,
-        methods=("post", "delete"),
-        url_path="shopping_cart",
-        url_name="shopping_cart",
-    )
-    def shopping_cart(self, request, pk=None):
-        """Добавление и удаление рецептов из списока покупок."""
-        user = request.user
-        if request.method == "POST":
-            name = "список покупок"
-            return self.add(ShoppingCart, user, pk, name)
-        if request.method == "DELETE":
-            name = "списка покупок"
-            return self.delete_relation(ShoppingCart, user, pk, name)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        if request.method == "POST": 
+            return self.add(Favorite, user, pk, name) 
+
+    @favorite.mapping.delete
+    def unfavorite(self, request, pk=None): 
+        """Удаление рецепта из избранного.""" 
+        user = request.user 
+        name = "избранного"
+
+        return self.delete_relation(Favorite, user, pk, name)
+
+    @action( 
+        detail=True, 
+        methods=("post",), 
+        url_path="shopping_cart", 
+        url_name="shopping_cart", 
+    ) 
+    def shopping_cart(self, request, pk=None): 
+        """Добавление рецепта в список покупок.""" 
+        user = request.user 
+        name = "список покупок"
+
+        if request.method == "POST": 
+            return self.add(ShoppingCart, user, pk, name) 
+
+    @shopping_cart.mapping.delete
+    def remove_from_cart(self, request, pk=None): 
+        """Удаление рецепта из списка покупок.""" 
+        user = request.user 
+        name = "списка покупок"
+
+        return self.delete_relation(ShoppingCart, user, pk, name)
 
     @action(
         detail=False,

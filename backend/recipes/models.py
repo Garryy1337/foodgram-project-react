@@ -8,10 +8,7 @@ from users.models import User
 from recipes.constants import (
     IngredientFieldLength,
     TagFieldLength,
-    MIN_AMOUNT,
-    MAX_AMOUNT,
-    MIN_COOKING_TIME,
-    MAX_COOKING_TIME,
+    ValidFieldLength
 )
 
 
@@ -94,11 +91,11 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(
-                MIN_COOKING_TIME,
-                f'Минимальное значение - {MIN_COOKING_TIME}'),
+                ValidFieldLength.MIN_COOKING_TIME,
+                f'Минимальное значение - {ValidFieldLength.MIN_COOKING_TIME}'),
             MaxValueValidator(
-                MAX_COOKING_TIME,
-                f'Максимальное значение - {MAX_COOKING_TIME}')
+                ValidFieldLength.MAX_COOKING_TIME,
+                f'Максимальное значение - {ValidFieldLength.MAX_COOKING_TIME}')
         ],
         verbose_name="Время приготовления, мин.",
         help_text="Время приготовления в минутах",
@@ -146,9 +143,11 @@ class IngredientInRecipe(models.Model):
         default=1,
         validators=[
             MinValueValidator(
-                MIN_AMOUNT, f'Минимальное значение - {MIN_AMOUNT}'),
+                ValidFieldLength.MIN_AMOUNT,
+                f'Минимальное значение - {ValidFieldLength.MIN_AMOUNT}'),
             MaxValueValidator(
-                MAX_AMOUNT, f'Максимальное значение - {MAX_AMOUNT}')
+                ValidFieldLength.MAX_AMOUNT,
+                f'Максимальное значение - {ValidFieldLength.MAX_AMOUNT}')
         ],
         verbose_name='Количество ингредиента'
     )
@@ -207,19 +206,6 @@ class Favorite(BaseList):
 
 
 class ShoppingCart(BaseList):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name="Пользователь",
-        related_name="shopping_list",
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name="Рецепт",
-        related_name="shopping_list"
-    )
-
     class Meta:
         verbose_name = "Список покупок"
         verbose_name_plural = "Список покупок"
@@ -229,3 +215,4 @@ class ShoppingCart(BaseList):
                 fields=("user", "recipe"), name="unique_shopping_list_recipe"
             ),
         )
+        default_related_name = "shopping_list"

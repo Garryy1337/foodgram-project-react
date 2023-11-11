@@ -5,8 +5,7 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import exceptions, serializers
 
 from api.pagination import PageNumberPagination
-from recipes.constants import (
-    MAX_COOKING_TIME, MIN_COOKING_TIME, MIN_INGREDIENT_AMOUNT)
+from recipes.constants import ValidFieldLength
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -140,9 +139,9 @@ class CreateUpdateRecipeIngredientsSerializer(serializers.ModelSerializer):
     amount = serializers.IntegerField(
         validators=[
             MinValueValidator(
-                MIN_INGREDIENT_AMOUNT,
+                ValidFieldLength.MIN_INGREDIENT_AMOUNT,
                 message=("Количество ингредиентов не может быть меньше "
-                         f"{MIN_INGREDIENT_AMOUNT}.")
+                         f"{ValidFieldLength.MIN_INGREDIENT_AMOUNT}.")
             )
         ]
     )
@@ -192,14 +191,14 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField(
         validators=[
             MinValueValidator(
-                MIN_COOKING_TIME,
+                ValidFieldLength.MIN_COOKING_TIME,
                 message=("Время приготовления не может быть меньше"
-                         f"{MIN_COOKING_TIME}!")
+                         f"{ValidFieldLength.MIN_COOKING_TIME}!")
             ),
             MaxValueValidator(
-                MAX_COOKING_TIME,
+                ValidFieldLength.MAX_COOKING_TIME,
                 message=("Время приготовления не может быть больше"
-                         f"{MAX_COOKING_TIME}!")
+                         f"{ValidFieldLength.MAX_COOKING_TIME}!")
             )
         ]
     )

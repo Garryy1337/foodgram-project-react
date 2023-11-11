@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import UniqueConstraint, CheckConstraint, Q
-from recipes.constants import UserFieldLength
+from users.user_constants import UserFieldLength
 
 
 class User(AbstractUser):
