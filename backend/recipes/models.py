@@ -1,15 +1,17 @@
 from django.core.validators import (
-    MinValueValidator,
     MaxValueValidator,
+    MinValueValidator,
     RegexValidator,
 )
 from django.db import models
-from users.models import User
+
 from recipes.constants import (
     IngredientFieldLength,
+    IngredientValidAmount,
+    RecipeValidTime,
     TagFieldLength,
-    ValidFieldLength
 )
+from users.models import User
 
 
 class Tag(models.Model):
@@ -91,11 +93,11 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(
-                ValidFieldLength.MIN_COOKING_TIME,
-                f'Минимальное значение - {ValidFieldLength.MIN_COOKING_TIME}'),
+                RecipeValidTime.MIN_COOKING_TIME,
+                f'Минимальное значение - {RecipeValidTime.MIN_COOKING_TIME}'),
             MaxValueValidator(
-                ValidFieldLength.MAX_COOKING_TIME,
-                f'Максимальное значение - {ValidFieldLength.MAX_COOKING_TIME}')
+                RecipeValidTime.MAX_COOKING_TIME,
+                f'Максимальное значение - {RecipeValidTime.MAX_COOKING_TIME}')
         ],
         verbose_name="Время приготовления, мин.",
         help_text="Время приготовления в минутах",
@@ -143,11 +145,11 @@ class IngredientInRecipe(models.Model):
         default=1,
         validators=[
             MinValueValidator(
-                ValidFieldLength.MIN_AMOUNT,
-                f'Минимальное значение - {ValidFieldLength.MIN_AMOUNT}'),
+                IngredientValidAmount.MIN_AMOUNT,
+                f'Минимальное значение - {IngredientValidAmount.MIN_AMOUNT}'),
             MaxValueValidator(
-                ValidFieldLength.MAX_AMOUNT,
-                f'Максимальное значение - {ValidFieldLength.MAX_AMOUNT}')
+                IngredientValidAmount.MAX_AMOUNT,
+                f'Максимальное значение - {IngredientValidAmount.MAX_AMOUNT}')
         ],
         verbose_name='Количество ингредиента'
     )

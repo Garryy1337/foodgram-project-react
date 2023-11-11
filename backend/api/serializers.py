@@ -1,11 +1,11 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.shortcuts import get_object_or_404
-from drf_extra_fields.fields import Base64ImageField
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import exceptions, serializers
 
 from api.pagination import PageNumberPagination
-from recipes.constants import ValidFieldLength
+from recipes.constants import IngredientValidAmount, RecipeValidTime
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -99,11 +99,17 @@ class SubscriptionSerializer(CustomUserSerializer, PageNumberPagination):
 
     def validate(self, data):
         user = self.context["request"].user
-        author = self.instance.author if self.instance else data["author"]
+        author = data.get("author")
 
         if user == author:
             raise serializers.ValidationError(
-                "Нельзя подписаться или отписаться от себя!")
+                "Нельзя подписаться или отписаться от себя!"
+            )
+
+        if Subscription.objects.filter(user=user, author=author).exists():
+            raise serializers.ValidationError(
+                "Подписка уже оформлена!"
+            )
 
         return data
 
@@ -139,9 +145,9 @@ class CreateUpdateRecipeIngredientsSerializer(serializers.ModelSerializer):
     amount = serializers.IntegerField(
         validators=[
             MinValueValidator(
-                ValidFieldLength.MIN_INGREDIENT_AMOUNT,
+                IngredientValidAmount.MIN_INGREDIENT_AMOUNT,
                 message=("Количество ингредиентов не может быть меньше "
-                         f"{ValidFieldLength.MIN_INGREDIENT_AMOUNT}.")
+                         f"{IngredientValidAmount.MIN_INGREDIENT_AMOUNT}.")
             )
         ]
     )
@@ -191,14 +197,14 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField(
         validators=[
             MinValueValidator(
-                ValidFieldLength.MIN_COOKING_TIME,
+                RecipeValidTime.MIN_COOKING_TIME,
                 message=("Время приготовления не может быть меньше"
-                         f"{ValidFieldLength.MIN_COOKING_TIME}!")
+                         f"{RecipeValidTime.MIN_COOKING_TIME}!")
             ),
             MaxValueValidator(
-                ValidFieldLength.MAX_COOKING_TIME,
+                RecipeValidTime.MAX_COOKING_TIME,
                 message=("Время приготовления не может быть больше"
-                         f"{ValidFieldLength.MAX_COOKING_TIME}!")
+                         f"{RecipeValidTime.MAX_COOKING_TIME}!")
             )
         ]
     )

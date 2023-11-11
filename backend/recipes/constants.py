@@ -9,9 +9,12 @@ class IngredientFieldLength:
     MEASUREMENT_UNIT = 15
 
 
-class ValidFieldLength:
+class RecipeValidTime:
     MIN_COOKING_TIME = 1
     MAX_COOKING_TIME = 9999
-    MIN_INGREDIENT_AMOUNT = 1
+
+
+class IngredientValidAmount:
     MIN_AMOUNT = 1
     MAX_AMOUNT = 50
+    MIN_INGREDIENT_AMOUNT = 1

@@ -53,10 +53,16 @@ class CustomUserViewSet(UserViewSet):
     )
     def subscribe(self, request, id=None):
         """Подписка на автора."""
-        user = self.request.user
+        user = request.user
         author = get_object_or_404(User, pk=id)
 
         if self.request.method == "POST":
+            serializer = SubscriptionSerializer(
+                data={"author": author},
+                context={"request": request}
+            )
+            serializer.is_valid(raise_exception=True)
+
             if Subscription.objects.filter(user=user, author=author).exists():
                 return Response(
                     {"errors": "Подписка уже оформлена!"},
@@ -74,7 +80,7 @@ class CustomUserViewSet(UserViewSet):
     @subscribe.mapping.delete
     def unsubscribe(self, request, id=None):
         """Отписка от автора."""
-        user = self.request.user
+        user = request.user
         author = get_object_or_404(User, pk=id)
 
         try:

@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import UniqueConstraint, CheckConstraint, Q
-from users.user_constants import UserFieldLength
+from django.db.models import CheckConstraint, Q, UniqueConstraint
+
+from users.constants import UserFieldLength
 
 
 class User(AbstractUser):
