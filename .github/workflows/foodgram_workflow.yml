@@ -61,9 +61,8 @@ jobs:
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           cd foodgram/
-          sudo docker compose stop
-          sudo docker compose rm -f backend frontend
-          sudo docker compose pull backend frontend
+          sudo docker compose -f docker-compose.yml down
+          sudo docker system prune -af
           touch .env
           echo -n > .env
           echo SECRET_KEY=${{ secrets.SECRET_KEY }} >> .env
@@ -73,10 +72,13 @@ jobs:
           echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
           echo DB_HOST=${{ secrets.DB_HOST }} >> .env
           echo DB_PORT=${{ secrets.DB_PORT }} >> .env
+          echo ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }} >> .env
+          echo DEBUG=${{ secrets.DEBUG }} >> .env
           sudo docker compose up -d
-          sudo docker compose exec -T backend python manage.py makemigrations users
-          sudo docker compose exec -T backend python manage.py migrate
-          sudo docker compose exec -T backend python manage.py collectstatic --no-input 
+          sudo docker compose exec backend python manage.py makemigrations
+          sudo docker compose exec backend python manage.py migrate
+          sudo docker compose exec backend python manage.py collectstatic --no-input
+          sudo docker compose exec backend python manage.py get_of_ingredients --path data/
   
   send_message:
     name: Telegram - Send message
