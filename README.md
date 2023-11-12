@@ -1,4 +1,4 @@
-### Проект Foodgram
+# Проект Foodgram
 
 **Foodgram** - продуктовый помощник.
 
@@ -8,7 +8,7 @@
 
 Для удобства навигации по сайту рецепты размечены тэгами (**Tags**)
 
-### Технологии
+## Технологии
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
@@ -22,75 +22,65 @@
 
 - Склонируйте проект из репозитория:
 
-```sh
+```
 $ git clone https://github.com/Garryy1337/foodgram-project-react.git
 ```
 
 - Выполните вход на удаленный сервер
 
 - Установите DOCKER на сервер:
-```sh
+```
 apt install docker.io 
 ```
 
 - Установитe docker-compose на сервер:
-```sh
+```
 curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 ```
 
 - Отредактируйте конфигурацию сервера NGNIX:
-```sh
+```
 Локально измените файл ..infra/nginx.conf - замените данные в строке server_name на IP-адрес удаленного сервера
 ```
 
 - Скопируйте файлы docker-compose.yml и nginx.conf из директории ../infra/ на удаленный сервер:
-```sh
+```
 scp docker-compose.yml <username>@<host>:/home/<username>/docker-compose.yaml
 scp nginx.conf <username>@<host>:/home/<username>/nginx.conf
 ```
-- Создайте переменные окружения (указаны в файле ../infra/env.example) и добавьте их в Secrets GitHub Actions
-
-- Установите и активируйте виртуальное окружение (для Windows):
-
-```sh
-python -m venv venv 
-source venv/Scripts/activate
-python -m pip install --upgrade pip
-``` 
-
 - Запустите приложение в контейнерах:
 
-```sh
+```
 docker-compose up -d --build
 ```
 
 - Выполните миграции:
 
-```sh
+```
 docker-compose exec backend python manage.py migrate
 ```
 
 - Создайте суперпользователя:
 
-```sh
+```
 docker-compose exec backend python manage.py createsuperuser
 ```
 
 - Выполните команду для сбора статики:
 
-```sh
+```
 docker-compose exec backend python manage.py collectstatic --no-input
 ```
 
 - Команда для заполнения тестовыми данными:
-```sh
+```
 docker-compose exec backend python manage.py get_of_ingredients --path data/
 ```
 
 - Команда для остановки приложения в контейнерах:
 
-```sh
+```
 docker-compose down -v
 ```
 
@@ -98,7 +88,7 @@ docker-compose down -v
 
 - Склонируйте проект из репозитория:
 
-```sh
+```
 $ git clone https://github.com/Garryy1337/foodgram-project-react.git
 ```
 
@@ -122,28 +112,23 @@ ALLOWED_HOSTS=<server_name>, <server_ip>, localhost, backend, 127.0.0.1
 
 Документация будет доступна по адресу: [http://localhost/api/docs/](http://localhost/api/docs/)
 
-### Особенности заполнения данными:
+#### Особенности заполнения данными:
 
 - Добавьте теги для для рецептов через админ-панель проекта [http://localhost/admin/](http://localhost/admin/), т.к. это поле является обязательным для сохранения рецепта и добавляется только админом.
 
 ***
 
-# Ресурсы API Foodgram
+## Ресурсы API Foodgram
 
 **AUTH**: получение/удаление токена авторизации.
 
 **USERS**: пользователи: регистрация, просмотр/изменение личного профиля, просмотр пользовательских профилей, подписка/отписка на пользователей.
 
-**TAGS**: теги категории рецептов (создаются и редактируюся пользователями с правами администратора). Описывается полями:
-```sh
-- Название.
-- Цветовой HEX-код (например, #49B64E).
-- Slug.
-```
+**TAGS**: теги категории рецептов (создаются и редактируюся пользователями с правами администратора).
 
 **RECIPES**: рецепты. У каждого авторизованного пользователя есть возможность добавлять рецепт в "Избранное" и в "Список покупок".
 Каждый рецепт содержит следующие поля:
-```sh
+```
 - Автор публикации (пользователь).
 - Название.
 - Картинка.
@@ -155,13 +140,13 @@ ALLOWED_HOSTS=<server_name>, <server_ip>, localhost, backend, 127.0.0.1
 
 **INGREDIENTS**: ингредиенты.
 Поля:
-```sh
+```
 - Название.
 - Количество.
 - Единицы измерения.
 ```
 
-# Пользовательские роли
+### Пользовательские роли
 
 **Права анонимного пользователя:**
 - Создание аккаунта.
@@ -209,7 +194,7 @@ POST /api/users/
 
 Пример запроса:
 
-```sh
+```
 {
 "email": "vpupkin@yandex.ru",
 "username": "vasya.pupkin",
@@ -232,7 +217,7 @@ POST /api/auth/token/login/
 
 Пример запроса:
 
-```sh
+```
 {
 "password": "Qwerty123",
 "email": "vpupkin@yandex.ru"
@@ -241,7 +226,7 @@ POST /api/auth/token/login/
 
 Пример ответа:
 
-```sh
+```
 {
   "auth_token": "string"
 }
@@ -257,7 +242,7 @@ POST /api/users/set_password/
 
 Пример запроса:
 
-```sh
+```
 {
   "new_password": "string",
   "current_password": "string"
@@ -274,11 +259,11 @@ POST /api/auth/token/logout/
 
 Пользователя может создать администратор через админ-зону сайта. Получение токена осуществляется способом, описанным выше.
 
-### Примеры использования API для неавторизованных пользователей:
+#### Примеры использования API для неавторизованных пользователей:
 
 Для неавторизованных пользователей работа с API доступна в режиме чтения.
 
-```sh
+```
 GET /api/users/- получить список всех пользователей.
 GET /api/tags/- получить список всех тегов.
 GET /api/tags/{id}/ - получить тег по ID.
@@ -298,7 +283,7 @@ GET /api/recipes/
 - код ответа сервера: 200 OK
 - тело ответа:
 
-```sh
+```
 {
   "count": 123,
   "next": "http://foodgram.example.org/api/recipes/?page=4",
@@ -350,7 +335,7 @@ GET /api/ingredients/?name=абри
 - код ответа сервера: 200 OK
 - тело ответа:
 
-```sh
+```
 [
     {
         "id": 1,
@@ -373,7 +358,7 @@ POST /api/recipes/
 Авторизация по токену.
 Запрос от имени пользователя должен выполняться с заголовком "Authorization: Token TOKENVALUE"
 
-```sh
+```
 {
   "ingredients": [
     {
@@ -396,7 +381,7 @@ POST /api/recipes/
 - код ответа сервера: 201
 - тело ответа:
 
-```sh
+```
 {
 "id": 0,
 "tags": [
@@ -437,7 +422,7 @@ POST /api/recipes/
 
 Доступ в админ-панель:
 
-```sh
+```
 http://crycat.ddns.net/admin
 login: admin (admin@admin.com)
 pass: admin
