@@ -4,11 +4,12 @@
 
 [![Django-app workflow](https://github.com/Garryy1337/foodgram-project-react/actions/workflows/main.yml/badge.svg)](https://github.com/Garryy1337/foodgram-project-react/actions/workflows/main.yml)
 
+### Описание проекта
 Пользователи **Foodgram** могут публиковать рецепты (**Recipes**), подписываться на публикации других пользователей, добавлять понравившиеся рецепты в список «Избранное», а перед походом в магазин скачивать в формате .txt сводный список продуктов (**Ingredients**), необходимых для приготовления одного или нескольких выбранных блюд.
 
 Для удобства навигации по сайту рецепты размечены тэгами (**Tags**)
 
-## Технологии
+### Технологии
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
@@ -112,7 +113,7 @@ ALLOWED_HOSTS=<server_name>, <server_ip>, localhost, backend, 127.0.0.1
 
 Документация будет доступна по адресу: [http://localhost/api/docs/](http://localhost/api/docs/)
 
-#### Особенности заполнения данными:
+### Особенности заполнения данными:
 
 - Добавьте теги для для рецептов через админ-панель проекта [http://localhost/admin/](http://localhost/admin/), т.к. это поле является обязательным для сохранения рецепта и добавляется только админом.
 
